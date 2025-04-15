@@ -12,31 +12,46 @@ from ontology.knowledge_graph import KnowledgeGraph
 
 # Set up MCP
 mcp = FastMCP("memory")
-
 logger = logging.getLogger(__name__)
 
-# Default settings
-DEFAULT_MEMORY_FILE_NAME = "memory.json"
-DEFAULT_LOCAL_STORAGE = False
-DEFAULT_MEMORY_FILE_PATH = "."
 
-_graph = None
+class GraphManager:
+    """Singleton manager for the knowledge graph instance."""
+
+    _instance = None
+    _graph: KnowledgeGraph | None = None
+
+    def __new__(cls):
+        """Ensure only one instance of GraphManager exists."""
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def get_graph(self) -> KnowledgeGraph:
+        """Get the graph instance, creating it if it doesn't exist."""
+        if self._graph is None:
+            self._graph = KnowledgeGraph()
+        return self._graph
+
+    def clear_graph(self) -> None:
+        """Clear the graph instance."""
+        if self._graph is not None:
+            self._graph.clear()
+            self._graph = KnowledgeGraph()
+
+
+# Create the singleton instance
+graph_manager = GraphManager()
 
 
 def get_graph() -> KnowledgeGraph:
     """Get the global graph instance."""
-    global _graph
-    if _graph is None:
-        _graph = KnowledgeGraph()
-    return _graph
+    return graph_manager.get_graph()
 
 
 def clear_graph() -> None:
     """Clear the global graph instance."""
-    global _graph
-    if _graph is not None:
-        _graph.clear()
-        _graph = KnowledgeGraph()
+    graph_manager.clear_graph()
 
 
 @mcp.tool()
@@ -153,9 +168,9 @@ async def open_nodes(names: List[str]) -> Dict[str, Union[Dict[str, Dict], List[
     return get_graph().open_nodes(names)
 
 
-def main():
+def main() -> None:
     """Entry point for the memory server."""
-    logger.info("Memory server starting (MEMORY_FILE_PATH=%s, MEMORY_FILE_NAME=%s)", MEMORY_FILE_PATH, MEMORY_FILE_NAME)
+    logger.info("Memory server starting...")
     mcp.run(transport="stdio")
 
 

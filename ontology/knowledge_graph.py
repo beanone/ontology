@@ -8,7 +8,6 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Dict, List, Union
 
 from .models import Entity, Relation
 
@@ -25,6 +24,7 @@ LOCAL_STORAGE = os.getenv("LOCAL_STORAGE", str(DEFAULT_LOCAL_STORAGE)).lower() =
 
 class MemoryError(Exception):
     """Raised when there is an error performing a memory operation."""
+
     pass
 
 
@@ -40,7 +40,9 @@ class KnowledgeGraph:
             memory_file_path: Path to store the memory file if not using local storage.
         """
         self.memory_file_name = os.getenv("MEMORY_FILE_NAME", DEFAULT_MEMORY_FILE_NAME)
-        self.local_storage = os.getenv("LOCAL_STORAGE", str(DEFAULT_LOCAL_STORAGE)).lower() == "true"
+        self.local_storage = (
+            os.getenv("LOCAL_STORAGE", str(DEFAULT_LOCAL_STORAGE)).lower() == "true"
+        )
         # Use the environment variable if set, otherwise use the provided parameter
         self.memory_file_path = os.getenv("MEMORY_FILE_PATH", DEFAULT_MEMORY_FILE_PATH)
 
@@ -54,11 +56,11 @@ class KnowledgeGraph:
         logger.debug(
             "Knowledge graph initialized with storage path: %s (local_storage=%s)",
             self.storage_path,
-            self.local_storage
+            self.local_storage,
         )
 
-        self.entities: Dict[str, Entity] = {}
-        self.relations: List[Relation] = []
+        self.entities: dict[str, Entity] = {}
+        self.relations: list[Relation] = []
         self._load_graph()
 
     def clear(self) -> None:
@@ -84,7 +86,7 @@ class KnowledgeGraph:
                 return
 
             # Read the file line by line
-            with open(self.storage_path, "r") as f:
+            with open(self.storage_path) as f:
                 content = f.read().strip()
                 if not content:  # Empty file
                     return
@@ -101,11 +103,11 @@ class KnowledgeGraph:
             content: String containing JSON lines.
         """
         for line in content.split("\n"):
-            line = line.strip()
-            if not line:
+            line_txt = line.strip()
+            if not line_txt:
                 continue
             try:
-                data = json.loads(line)
+                data = json.loads(line_txt)
                 if "name" in data:
                     # Entity - ensure observations exists with default empty list
                     if "observations" not in data:
@@ -127,11 +129,15 @@ class KnowledgeGraph:
                     )
             except json.JSONDecodeError:
                 # Log warning for invalid JSON
-                logger.warning("Invalid JSON line encountered. Skipping line: %s", line[:100])
+                logger.warning(
+                    "Invalid JSON line encountered. Skipping line: %s", line[:100]
+                )
                 continue
             except KeyError as e:
                 # Log warning for missing required fields
-                logger.warning("Missing required field in data: %s. Error: %s", line[:100], str(e))
+                logger.warning(
+                    "Missing required field in data: %s. Error: %s", line[:100], str(e)
+                )
                 continue
 
     def _save_graph(self) -> None:
@@ -169,7 +175,7 @@ class KnowledgeGraph:
             f.flush()
             os.fsync(f.fileno())
 
-    def create_entities(self, entities: List[Dict[str, Union[str, List[str]]]]) -> str:
+    def create_entities(self, entities: list[dict[str, str | list[str]]]) -> str:
         """Create new entities in the graph.
 
         Args:
@@ -194,7 +200,7 @@ class KnowledgeGraph:
         self._save_graph()
         return "Successfully created entities"
 
-    def create_relations(self, relations: List[Dict[str, str]]) -> str:
+    def create_relations(self, relations: list[dict[str, str]]) -> str:
         """Create new relations between entities.
 
         Args:
@@ -208,7 +214,9 @@ class KnowledgeGraph:
                 relation_data["from_entity"] not in self.entities
                 or relation_data["to_entity"] not in self.entities
             ):
-                return f"One or both entities not found: {relation_data['from_entity']}, {relation_data['to_entity']}"
+                return f"""One or both entities not found:
+                        {relation_data["from_entity"]},
+                        {relation_data["to_entity"]}"""
 
             self.relations.append(
                 Relation(
@@ -221,7 +229,7 @@ class KnowledgeGraph:
         self._save_graph()
         return "Successfully created relations"
 
-    def add_observations(self, observations: List[Dict[str, Union[str, List[str]]]]) -> str:
+    def add_observations(self, observations: list[dict[str, str | list[str]]]) -> str:
         """Add observations to existing entities.
 
         Args:
@@ -244,7 +252,7 @@ class KnowledgeGraph:
         self._save_graph()
         return "Successfully added observations"
 
-    def delete_entities(self, entity_names: List[str]) -> str:
+    def delete_entities(self, entity_names: list[str]) -> str:
         """Delete entities and their relations.
 
         Args:
@@ -260,13 +268,13 @@ class KnowledgeGraph:
                 self.relations = [
                     r
                     for r in self.relations
-                    if r.from_entity != name and r.to_entity != name
+                    if name not in (r.from_entity, r.to_entity)
                 ]
 
         self._save_graph()
         return "Successfully deleted entities"
 
-    def delete_observations(self, deletions: List[Dict[str, str]]) -> str:
+    def delete_observations(self, deletions: list[dict[str, str]]) -> str:
         """Delete specific observations from entities.
 
         Args:
@@ -287,7 +295,7 @@ class KnowledgeGraph:
         self._save_graph()
         return "Successfully deleted observations"
 
-    def delete_relations(self, relations: List[Dict[str, str]]) -> str:
+    def delete_relations(self, relations: list[dict[str, str]]) -> str:
         """Delete specific relations from the graph.
 
         Args:
@@ -321,7 +329,7 @@ class KnowledgeGraph:
         self._save_graph()
         return "Successfully deleted relations"
 
-    def read_graph(self) -> Dict[str, Union[Dict[str, Dict], List[Dict]]]:
+    def read_graph(self) -> dict[str, dict[str, dict] | list[dict]]:
         """Read the entire knowledge graph.
 
         Returns:
@@ -345,7 +353,7 @@ class KnowledgeGraph:
             ],
         }
 
-    def search_nodes(self, query: str) -> Dict[str, Union[Dict[str, Dict], List[Dict]]]:
+    def search_nodes(self, query: str) -> dict[str, dict[str, dict] | list[dict]]:
         """Search for nodes based on query.
 
         Args:
@@ -394,7 +402,7 @@ class KnowledgeGraph:
             ],
         }
 
-    def open_nodes(self, names: List[str]) -> Dict[str, Union[Dict[str, Dict], List[Dict]]]:
+    def open_nodes(self, names: list[str]) -> dict[str, dict[str, dict] | list[dict]]:
         """Open specific nodes by name.
 
         Args:
@@ -404,9 +412,7 @@ class KnowledgeGraph:
             Dictionary containing requested entities and their relations.
         """
         requested_entities = {
-            name: self.entities[name]
-            for name in names
-            if name in self.entities
+            name: self.entities[name] for name in names if name in self.entities
         }
 
         requested_relations = [

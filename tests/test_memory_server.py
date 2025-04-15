@@ -1,26 +1,24 @@
 """Test cases for memory server."""
 
-import json
 import os
 import tempfile
 from pathlib import Path
-from typing import Dict, List
 
 import pytest
 
+from ontology.knowledge_graph import DEFAULT_MEMORY_FILE_NAME
 from ontology.memory_server import (
+    add_observations,
+    clear_graph,
     create_entities,
     create_relations,
-    add_observations,
     delete_entities,
     delete_observations,
     delete_relations,
+    get_graph,
+    open_nodes,
     read_graph,
     search_nodes,
-    open_nodes,
-    clear_graph,
-    get_graph,
-    DEFAULT_MEMORY_FILE_NAME,
 )
 
 
@@ -89,21 +87,23 @@ class TestReadGraph:
             {
                 "name": "test_project",
                 "entity_type": "project",
-                "observations": ["Test project"]
+                "observations": ["Test project"],
             },
             {
                 "name": "test_component",
                 "entity_type": "component",
-                "observations": ["Test component"]
-            }
+                "observations": ["Test component"],
+            },
         ]
         await create_entities(entities)
 
-        relations = [{
-            "from_entity": "test_project",
-            "to_entity": "test_component",
-            "relation_type": "has_component"
-        }]
+        relations = [
+            {
+                "from_entity": "test_project",
+                "to_entity": "test_component",
+                "relation_type": "has_component",
+            }
+        ]
         await create_relations(relations)
 
         result = await read_graph()
@@ -129,13 +129,13 @@ class TestCreateEntities:
             {
                 "name": "project1",
                 "entity_type": "project",
-                "observations": ["Project 1"]
+                "observations": ["Project 1"],
             },
             {
                 "name": "project2",
                 "entity_type": "project",
-                "observations": ["Project 2"]
-            }
+                "observations": ["Project 2"],
+            },
         ]
         result = await create_entities(entities)
         assert "Successfully created entities" in result
@@ -155,11 +155,13 @@ class TestCreateEntities:
             f.write("")  # Clear the file
 
         # First create an entity
-        entities = [{
-            "name": "test_project",
-            "entity_type": "project",
-            "observations": ["Original project"]
-        }]
+        entities = [
+            {
+                "name": "test_project",
+                "entity_type": "project",
+                "observations": ["Original project"],
+            }
+        ]
         await create_entities(entities)
 
         # Try to create the same entity again
@@ -184,25 +186,19 @@ class TestCreateRelations:
 
         # First create entities
         entities = [
-            {
-                "name": "project1",
-                "entity_type": "project",
-                "observations": []
-            },
-            {
-                "name": "component1",
-                "entity_type": "component",
-                "observations": []
-            }
+            {"name": "project1", "entity_type": "project", "observations": []},
+            {"name": "component1", "entity_type": "component", "observations": []},
         ]
         await create_entities(entities)
 
         # Create relation
-        relations = [{
-            "from_entity": "project1",
-            "to_entity": "component1",
-            "relation_type": "has_component"
-        }]
+        relations = [
+            {
+                "from_entity": "project1",
+                "to_entity": "component1",
+                "relation_type": "has_component",
+            }
+        ]
         result = await create_relations(relations)
         assert "Successfully created relations" in result
 
@@ -220,11 +216,13 @@ class TestCreateRelations:
         with open(memory_path, "w") as f:
             f.write("")  # Clear the file
 
-        relations = [{
-            "from_entity": "nonexistent1",
-            "to_entity": "nonexistent2",
-            "relation_type": "has_component"
-        }]
+        relations = [
+            {
+                "from_entity": "nonexistent1",
+                "to_entity": "nonexistent2",
+                "relation_type": "has_component",
+            }
+        ]
         result = await create_relations(relations)
         assert "entities not found" in result
 
@@ -241,24 +239,30 @@ class TestAddObservations:
             f.write("")  # Clear the file
 
         # First create an entity
-        entities = [{
-            "name": "test_project",
-            "entity_type": "project",
-            "observations": ["Original observation"]
-        }]
+        entities = [
+            {
+                "name": "test_project",
+                "entity_type": "project",
+                "observations": ["Original observation"],
+            }
+        ]
         await create_entities(entities)
 
         # Add observations
-        observations = [{
-            "entity_name": "test_project",
-            "contents": ["New observation 1", "New observation 2"]
-        }]
+        observations = [
+            {
+                "entity_name": "test_project",
+                "contents": ["New observation 1", "New observation 2"],
+            }
+        ]
         result = await add_observations(observations)
         assert "Successfully added observations" in result
 
         # Verify observations were added
         graph = await read_graph()
-        assert "Original observation" in graph["entities"]["test_project"]["observations"]
+        assert (
+            "Original observation" in graph["entities"]["test_project"]["observations"]
+        )
         assert "New observation 1" in graph["entities"]["test_project"]["observations"]
         assert "New observation 2" in graph["entities"]["test_project"]["observations"]
 
@@ -269,10 +273,7 @@ class TestAddObservations:
         with open(memory_path, "w") as f:
             f.write("")  # Clear the file
 
-        observations = [{
-            "entity_name": "nonexistent",
-            "contents": ["New observation"]
-        }]
+        observations = [{"entity_name": "nonexistent", "contents": ["New observation"]}]
         result = await add_observations(observations)
         assert "Entity not found" in result
 
@@ -289,18 +290,17 @@ class TestDeleteObservations:
             f.write("")  # Clear the file
 
         # First create an entity with observations
-        entities = [{
-            "name": "test_project",
-            "entity_type": "project",
-            "observations": ["Observation 1", "Observation 2"]
-        }]
+        entities = [
+            {
+                "name": "test_project",
+                "entity_type": "project",
+                "observations": ["Observation 1", "Observation 2"],
+            }
+        ]
         await create_entities(entities)
 
         # Delete an observation
-        deletions = [{
-            "entity_name": "test_project",
-            "observation": "Observation 1"
-        }]
+        deletions = [{"entity_name": "test_project", "observation": "Observation 1"}]
         result = await delete_observations(deletions)
         assert "Successfully deleted observations" in result
 
@@ -316,10 +316,7 @@ class TestDeleteObservations:
         with open(memory_path, "w") as f:
             f.write("")  # Clear the file
 
-        deletions = [{
-            "entity_name": "nonexistent",
-            "observation": "Some observation"
-        }]
+        deletions = [{"entity_name": "nonexistent", "observation": "Some observation"}]
         result = await delete_observations(deletions)
         assert "Entity not found" in result
 
@@ -337,23 +334,17 @@ class TestDeleteRelations:
 
         # First create entities and relation
         entities = [
-            {
-                "name": "project1",
-                "entity_type": "project",
-                "observations": []
-            },
-            {
-                "name": "component1",
-                "entity_type": "component",
-                "observations": []
-            }
+            {"name": "project1", "entity_type": "project", "observations": []},
+            {"name": "component1", "entity_type": "component", "observations": []},
         ]
         await create_entities(entities)
-        relations = [{
-            "from_entity": "project1",
-            "to_entity": "component1",
-            "relation_type": "has_component"
-        }]
+        relations = [
+            {
+                "from_entity": "project1",
+                "to_entity": "component1",
+                "relation_type": "has_component",
+            }
+        ]
         await create_relations(relations)
 
         # Delete the relation
@@ -378,23 +369,17 @@ class TestDeleteEntities:
 
         # First create entities and relation
         entities = [
-            {
-                "name": "project1",
-                "entity_type": "project",
-                "observations": []
-            },
-            {
-                "name": "component1",
-                "entity_type": "component",
-                "observations": []
-            }
+            {"name": "project1", "entity_type": "project", "observations": []},
+            {"name": "component1", "entity_type": "component", "observations": []},
         ]
         await create_entities(entities)
-        relations = [{
-            "from_entity": "project1",
-            "to_entity": "component1",
-            "relation_type": "has_component"
-        }]
+        relations = [
+            {
+                "from_entity": "project1",
+                "to_entity": "component1",
+                "relation_type": "has_component",
+            }
+        ]
         await create_relations(relations)
 
         # Delete an entity
@@ -423,13 +408,13 @@ class TestSearchNodes:
             {
                 "name": "test_project",
                 "entity_type": "project",
-                "observations": ["Test project"]
+                "observations": ["Test project"],
             },
             {
                 "name": "other_project",
                 "entity_type": "project",
-                "observations": ["Other project"]
-            }
+                "observations": ["Other project"],
+            },
         ]
         await create_entities(entities)
 
@@ -445,11 +430,13 @@ class TestSearchNodes:
         with open(memory_path, "w") as f:
             f.write("")  # Clear the file
 
-        entities = [{
-            "name": "test_project",
-            "entity_type": "project",
-            "observations": ["Contains test observation"]
-        }]
+        entities = [
+            {
+                "name": "test_project",
+                "entity_type": "project",
+                "observations": ["Contains test observation"],
+            }
+        ]
         await create_entities(entities)
 
         result = await search_nodes("test observation")
@@ -469,16 +456,8 @@ class TestOpenNodes:
 
         # Create test data
         entities = [
-            {
-                "name": "project1",
-                "entity_type": "project",
-                "observations": []
-            },
-            {
-                "name": "project2",
-                "entity_type": "project",
-                "observations": []
-            }
+            {"name": "project1", "entity_type": "project", "observations": []},
+            {"name": "project2", "entity_type": "project", "observations": []},
         ]
         await create_entities(entities)
 
@@ -495,23 +474,17 @@ class TestOpenNodes:
 
         # Create test data with relations
         entities = [
-            {
-                "name": "project1",
-                "entity_type": "project",
-                "observations": []
-            },
-            {
-                "name": "component1",
-                "entity_type": "component",
-                "observations": []
-            }
+            {"name": "project1", "entity_type": "project", "observations": []},
+            {"name": "component1", "entity_type": "component", "observations": []},
         ]
         await create_entities(entities)
-        relations = [{
-            "from_entity": "project1",
-            "to_entity": "component1",
-            "relation_type": "has_component"
-        }]
+        relations = [
+            {
+                "from_entity": "project1",
+                "to_entity": "component1",
+                "relation_type": "has_component",
+            }
+        ]
         await create_relations(relations)
 
         result = await open_nodes(["project1"])

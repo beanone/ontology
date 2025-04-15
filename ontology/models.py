@@ -5,7 +5,6 @@ in the knowledge graph.
 """
 
 from dataclasses import dataclass
-from typing import List
 
 
 @dataclass
@@ -20,7 +19,7 @@ class Entity:
 
     name: str
     entity_type: str
-    observations: List[str]
+    observations: list[str]
 
 
 @dataclass
