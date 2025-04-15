@@ -9,7 +9,7 @@ import logging
 import os
 from pathlib import Path
 
-from .models import Entity, Relation
+from ontology.models import Entity, Relation
 
 logger = logging.getLogger(__name__)
 
@@ -40,9 +40,7 @@ class KnowledgeGraph:
             memory_file_path: Path to store the memory file if not using local storage.
         """
         self.memory_file_name = os.getenv("MEMORY_FILE_NAME", DEFAULT_MEMORY_FILE_NAME)
-        self.local_storage = (
-            os.getenv("LOCAL_STORAGE", str(DEFAULT_LOCAL_STORAGE)).lower() == "true"
-        )
+        self.local_storage = os.getenv("LOCAL_STORAGE", str(DEFAULT_LOCAL_STORAGE)).lower() == "true"
         # Use the environment variable if set, otherwise use the provided parameter
         self.memory_file_path = os.getenv("MEMORY_FILE_PATH", DEFAULT_MEMORY_FILE_PATH)
 
@@ -129,15 +127,11 @@ class KnowledgeGraph:
                     )
             except json.JSONDecodeError:
                 # Log warning for invalid JSON
-                logger.warning(
-                    "Invalid JSON line encountered. Skipping line: %s", line[:100]
-                )
+                logger.warning("Invalid JSON line encountered. Skipping line: %s", line[:100])
                 continue
             except KeyError as e:
                 # Log warning for missing required fields
-                logger.warning(
-                    "Missing required field in data: %s. Error: %s", line[:100], str(e)
-                )
+                logger.warning("Missing required field in data: %s. Error: %s", line[:100], str(e))
                 continue
 
     def _save_graph(self) -> None:
@@ -210,10 +204,7 @@ class KnowledgeGraph:
             Success message or error string.
         """
         for relation_data in relations:
-            if (
-                relation_data["from_entity"] not in self.entities
-                or relation_data["to_entity"] not in self.entities
-            ):
+            if relation_data["from_entity"] not in self.entities or relation_data["to_entity"] not in self.entities:
                 return f"""One or both entities not found:
                         {relation_data["from_entity"]},
                         {relation_data["to_entity"]}"""
@@ -265,11 +256,7 @@ class KnowledgeGraph:
             if name in self.entities:
                 del self.entities[name]
                 # Remove related relations
-                self.relations = [
-                    r
-                    for r in self.relations
-                    if name not in (r.from_entity, r.to_entity)
-                ]
+                self.relations = [r for r in self.relations if name not in (r.from_entity, r.to_entity)]
 
         self._save_graph()
         return "Successfully deleted entities"
@@ -288,9 +275,7 @@ class KnowledgeGraph:
                 return f"Entity not found: {del_data['entity_name']}"
 
             entity = self.entities[del_data["entity_name"]]
-            entity.observations = [
-                obs for obs in entity.observations if obs != del_data["observation"]
-            ]
+            entity.observations = [obs for obs in entity.observations if obs != del_data["observation"]]
 
         self._save_graph()
         return "Successfully deleted observations"
@@ -379,9 +364,7 @@ class KnowledgeGraph:
 
         # Get relations for matching entities
         matching_relations = [
-            r
-            for r in self.relations
-            if r.from_entity in matching_entities or r.to_entity in matching_entities
+            r for r in self.relations if r.from_entity in matching_entities or r.to_entity in matching_entities
         ]
 
         return {
@@ -411,14 +394,10 @@ class KnowledgeGraph:
         Returns:
             Dictionary containing requested entities and their relations.
         """
-        requested_entities = {
-            name: self.entities[name] for name in names if name in self.entities
-        }
+        requested_entities = {name: self.entities[name] for name in names if name in self.entities}
 
         requested_relations = [
-            r
-            for r in self.relations
-            if r.from_entity in requested_entities or r.to_entity in requested_entities
+            r for r in self.relations if r.from_entity in requested_entities or r.to_entity in requested_entities
         ]
 
         return {

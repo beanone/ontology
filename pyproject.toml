@@ -36,7 +36,7 @@ packages = ["ontology"]
 
 [tool.ruff]
 # Enable pycodestyle (`E`) and Pyflakes (`F`) codes by default.
-line-length = 88
+line-length = 120
 target-version = "py310"
 
 [tool.ruff.lint]
@@ -61,6 +61,10 @@ unfixable = []
 # Rules to ignore
 ignore = []
 
+# Per-file ignores
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["PLR2004"]  # Ignore magic numbers in test files
+
 [tool.ruff.format]
 # Use double quotes for strings.
 quote-style = "double"
@@ -69,7 +73,7 @@ indent-style = "space"
 # Format docstrings according to Google style.
 docstring-code-format = true
 # Enable reformatting of code snippets in docstrings.
-docstring-code-line-length = 88
+docstring-code-line-length = 120
 
 [tool.mypy]
 python_version = "3.10"
@@ -83,3 +87,6 @@ warn_unused_ignores = true
 warn_return_any = true
 warn_unreachable = true
 strict_optional = true
+namespace_packages = true
+explicit_package_bases = true
+mypy_path = "."

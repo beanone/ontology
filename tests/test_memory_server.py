@@ -2,6 +2,7 @@
 
 import os
 import tempfile
+from collections.abc import Generator
 from pathlib import Path
 
 import pytest
@@ -23,7 +24,7 @@ from ontology.memory_server import (
 
 
 @pytest.fixture
-def temp_dir():
+def temp_dir() -> Generator[str, None, None]:
     """Create a temporary directory for testing."""
     with tempfile.TemporaryDirectory() as tmp_dir:
         yield tmp_dir
@@ -31,7 +32,7 @@ def temp_dir():
 
 
 @pytest.fixture
-def setup_memory(temp_dir):
+def setup_memory(temp_dir: str) -> Generator[None, None, None]:
     """Set up a temporary memory file for testing."""
     # Set up environment variables for testing
     os.environ["MEMORY_FILE_PATH"] = temp_dir
@@ -65,7 +66,7 @@ def setup_memory(temp_dir):
 class TestReadGraph:
     """Test cases for read_graph function."""
 
-    async def test_read_empty_graph(self, setup_memory, temp_dir):
+    async def test_read_empty_graph(self, setup_memory: None, temp_dir: str) -> None:
         """Test reading an empty graph."""
         # Ensure memory file is empty
         memory_path = Path(temp_dir) / DEFAULT_MEMORY_FILE_NAME
@@ -75,7 +76,7 @@ class TestReadGraph:
         result = await read_graph()
         assert result == {"entities": {}, "relations": []}
 
-    async def test_read_graph_with_data(self, setup_memory, temp_dir):
+    async def test_read_graph_with_data(self, setup_memory: None, temp_dir: str) -> None:
         """Test reading a graph with data."""
         # Ensure memory file is empty
         memory_path = Path(temp_dir) / DEFAULT_MEMORY_FILE_NAME
@@ -118,7 +119,7 @@ class TestReadGraph:
 class TestCreateEntities:
     """Test cases for create_entities function."""
 
-    async def test_create_entities(self, setup_memory, temp_dir):
+    async def test_create_entities(self, setup_memory: None, temp_dir: str) -> None:
         """Test creating multiple entities."""
         # Ensure memory file is empty
         memory_path = Path(temp_dir) / DEFAULT_MEMORY_FILE_NAME
@@ -147,7 +148,7 @@ class TestCreateEntities:
         assert graph["entities"]["project1"]["observations"] == ["Project 1"]
         assert graph["entities"]["project2"]["observations"] == ["Project 2"]
 
-    async def test_create_duplicate_entity(self, setup_memory, temp_dir):
+    async def test_create_duplicate_entity(self, setup_memory: None, temp_dir: str) -> None:
         """Test creating a duplicate entity."""
         # Ensure memory file is empty
         memory_path = Path(temp_dir) / DEFAULT_MEMORY_FILE_NAME
@@ -177,7 +178,7 @@ class TestCreateEntities:
 class TestCreateRelations:
     """Test cases for create_relations function."""
 
-    async def test_create_relation(self, setup_memory, temp_dir):
+    async def test_create_relation(self, setup_memory: None, temp_dir: str) -> None:
         """Test creating a relation between entities."""
         # Ensure memory file is empty
         memory_path = Path(temp_dir) / DEFAULT_MEMORY_FILE_NAME
@@ -209,8 +210,8 @@ class TestCreateRelations:
         assert graph["relations"][0]["to_entity"] == "component1"
         assert graph["relations"][0]["relation_type"] == "has_component"
 
-    async def test_create_relation_nonexistent_entity(self, setup_memory, temp_dir):
-        """Test creating a relation with non-existent entities."""
+    async def test_create_relation_nonexistent_entity(self, setup_memory: None, temp_dir: str) -> None:
+        """Test creating a relation with nonexistent entity."""
         # Ensure memory file is empty
         memory_path = Path(temp_dir) / DEFAULT_MEMORY_FILE_NAME
         with open(memory_path, "w") as f:
@@ -231,7 +232,7 @@ class TestCreateRelations:
 class TestAddObservations:
     """Test cases for add_observations function."""
 
-    async def test_add_observations(self, setup_memory, temp_dir):
+    async def test_add_observations(self, setup_memory: None, temp_dir: str) -> None:
         """Test adding observations to an entity."""
         # Ensure memory file is empty
         memory_path = Path(temp_dir) / DEFAULT_MEMORY_FILE_NAME
@@ -260,14 +261,12 @@ class TestAddObservations:
 
         # Verify observations were added
         graph = await read_graph()
-        assert (
-            "Original observation" in graph["entities"]["test_project"]["observations"]
-        )
+        assert "Original observation" in graph["entities"]["test_project"]["observations"]
         assert "New observation 1" in graph["entities"]["test_project"]["observations"]
         assert "New observation 2" in graph["entities"]["test_project"]["observations"]
 
-    async def test_add_observations_nonexistent_entity(self, setup_memory, temp_dir):
-        """Test adding observations to a non-existent entity."""
+    async def test_add_observations_nonexistent_entity(self, setup_memory: None, temp_dir: str) -> None:
+        """Test adding observations to a nonexistent entity."""
         # Ensure memory file is empty
         memory_path = Path(temp_dir) / DEFAULT_MEMORY_FILE_NAME
         with open(memory_path, "w") as f:
@@ -282,7 +281,7 @@ class TestAddObservations:
 class TestDeleteObservations:
     """Test cases for delete_observations function."""
 
-    async def test_delete_observations(self, setup_memory, temp_dir):
+    async def test_delete_observations(self, setup_memory: None, temp_dir: str) -> None:
         """Test deleting observations from an entity."""
         # Ensure memory file is empty
         memory_path = Path(temp_dir) / DEFAULT_MEMORY_FILE_NAME
@@ -309,8 +308,8 @@ class TestDeleteObservations:
         assert "Observation 1" not in graph["entities"]["test_project"]["observations"]
         assert "Observation 2" in graph["entities"]["test_project"]["observations"]
 
-    async def test_delete_observations_nonexistent_entity(self, setup_memory, temp_dir):
-        """Test deleting observations from a non-existent entity."""
+    async def test_delete_observations_nonexistent_entity(self, setup_memory: None, temp_dir: str) -> None:
+        """Test deleting observations from a nonexistent entity."""
         # Ensure memory file is empty
         memory_path = Path(temp_dir) / DEFAULT_MEMORY_FILE_NAME
         with open(memory_path, "w") as f:
@@ -325,7 +324,7 @@ class TestDeleteObservations:
 class TestDeleteRelations:
     """Test cases for delete_relations function."""
 
-    async def test_delete_relation(self, setup_memory, temp_dir):
+    async def test_delete_relation(self, setup_memory: None, temp_dir: str) -> None:
         """Test deleting a relation."""
         # Ensure memory file is empty
         memory_path = Path(temp_dir) / DEFAULT_MEMORY_FILE_NAME
@@ -360,8 +359,8 @@ class TestDeleteRelations:
 class TestDeleteEntities:
     """Test cases for delete_entities function."""
 
-    async def test_delete_entity(self, setup_memory, temp_dir):
-        """Test deleting an entity and its relations."""
+    async def test_delete_entity(self, setup_memory: None, temp_dir: str) -> None:
+        """Test deleting an entity."""
         # Ensure memory file is empty
         memory_path = Path(temp_dir) / DEFAULT_MEMORY_FILE_NAME
         with open(memory_path, "w") as f:
@@ -396,7 +395,7 @@ class TestDeleteEntities:
 class TestSearchNodes:
     """Test cases for search_nodes function."""
 
-    async def test_search_by_name(self, setup_memory, temp_dir):
+    async def test_search_by_name(self, setup_memory: None, temp_dir: str) -> None:
         """Test searching nodes by name."""
         # Ensure memory file is empty
         memory_path = Path(temp_dir) / DEFAULT_MEMORY_FILE_NAME
@@ -423,8 +422,8 @@ class TestSearchNodes:
         assert "test_project" in result["entities"]
         assert "other_project" not in result["entities"]
 
-    async def test_search_by_observation(self, setup_memory, temp_dir):
-        """Test searching nodes by observation content."""
+    async def test_search_by_observation(self, setup_memory: None, temp_dir: str) -> None:
+        """Test searching nodes by observation."""
         # Ensure memory file is empty
         memory_path = Path(temp_dir) / DEFAULT_MEMORY_FILE_NAME
         with open(memory_path, "w") as f:
@@ -447,7 +446,7 @@ class TestSearchNodes:
 class TestOpenNodes:
     """Test cases for open_nodes function."""
 
-    async def test_open_single_node(self, setup_memory, temp_dir):
+    async def test_open_single_node(self, setup_memory: None, temp_dir: str) -> None:
         """Test opening a single node."""
         # Ensure memory file is empty
         memory_path = Path(temp_dir) / DEFAULT_MEMORY_FILE_NAME
@@ -465,7 +464,7 @@ class TestOpenNodes:
         assert "project1" in result["entities"]
         assert "project2" not in result["entities"]
 
-    async def test_open_nodes_with_relations(self, setup_memory, temp_dir):
+    async def test_open_nodes_with_relations(self, setup_memory: None, temp_dir: str) -> None:
         """Test opening nodes with relations."""
         # Ensure memory file is empty
         memory_path = Path(temp_dir) / DEFAULT_MEMORY_FILE_NAME
@@ -498,15 +497,15 @@ class TestOpenNodes:
 class TestInitializeGraphFromData:
     """Test cases for initialize_graph_from_data function."""
 
-    async def test_initialize_empty_content(self, setup_memory, temp_dir):
-        """Test initializing with empty content."""
+    async def test_initialize_empty_content(self, setup_memory: None, temp_dir: str) -> None:
+        """Test initializing graph with empty content."""
         graph = get_graph()
         graph.initialize_graph_from_data("")
         result = await read_graph()
         assert result == {"entities": {}, "relations": []}
 
-    async def test_initialize_with_entities(self, setup_memory, temp_dir):
-        """Test initializing with valid entities."""
+    async def test_initialize_with_entities(self, setup_memory: None, temp_dir: str) -> None:
+        """Test initializing graph with entities."""
         content = (
             '{"name": "test_project", "entity_type": "project", "observations": ["Test project"]}\n'
             '{"name": "test_component", "entity_type": "component", "observations": ["Test component"]}'
@@ -519,8 +518,8 @@ class TestInitializeGraphFromData:
         assert result["entities"]["test_project"]["entity_type"] == "project"
         assert result["entities"]["test_component"]["entity_type"] == "component"
 
-    async def test_initialize_with_entities_and_relations(self, setup_memory, temp_dir):
-        """Test initializing with valid entities and relations."""
+    async def test_initialize_with_entities_and_relations(self, setup_memory: None, temp_dir: str) -> None:
+        """Test initializing graph with entities and relations."""
         content = (
             '{"name": "test_project", "entity_type": "project", "observations": ["Test project"]}\n'
             '{"name": "test_component", "entity_type": "component", "observations": ["Test component"]}\n'

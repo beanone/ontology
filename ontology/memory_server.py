@@ -4,7 +4,6 @@ This module provides a persistent memory implementation using a local knowledge 
 """
 
 import logging
-from typing import Dict, List, Union
 
 from mcp.server.fastmcp import FastMCP
 
@@ -21,7 +20,7 @@ class GraphManager:
     _instance = None
     _graph: KnowledgeGraph | None = None
 
-    def __new__(cls):
+    def __new__(cls) -> "GraphManager":
         """Ensure only one instance of GraphManager exists."""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
@@ -55,7 +54,7 @@ def clear_graph() -> None:
 
 
 @mcp.tool()
-async def create_entities(entities: List[Dict[str, Union[str, List[str]]]]) -> str:
+async def create_entities(entities: list[dict[str, str | list[str]]]) -> str:
     """Create new entities in the knowledge graph.
 
     Args:
@@ -68,7 +67,7 @@ async def create_entities(entities: List[Dict[str, Union[str, List[str]]]]) -> s
 
 
 @mcp.tool()
-async def create_relations(relations: List[Dict[str, str]]) -> str:
+async def create_relations(relations: list[dict[str, str]]) -> str:
     """Create new relations between entities.
 
     Args:
@@ -81,7 +80,7 @@ async def create_relations(relations: List[Dict[str, str]]) -> str:
 
 
 @mcp.tool()
-async def add_observations(observations: List[Dict[str, Union[str, List[str]]]]) -> str:
+async def add_observations(observations: list[dict[str, str | list[str]]]) -> str:
     """Add observations to existing entities.
 
     Args:
@@ -94,7 +93,7 @@ async def add_observations(observations: List[Dict[str, Union[str, List[str]]]])
 
 
 @mcp.tool()
-async def delete_entities(entity_names: List[str]) -> str:
+async def delete_entities(entity_names: list[str]) -> str:
     """Delete entities and their relations.
 
     Args:
@@ -107,7 +106,7 @@ async def delete_entities(entity_names: List[str]) -> str:
 
 
 @mcp.tool()
-async def delete_observations(deletions: List[Dict[str, str]]) -> str:
+async def delete_observations(deletions: list[dict[str, str]]) -> str:
     """Delete specific observations from entities.
 
     Args:
@@ -120,7 +119,7 @@ async def delete_observations(deletions: List[Dict[str, str]]) -> str:
 
 
 @mcp.tool()
-async def delete_relations(relations: List[Dict[str, str]]) -> str:
+async def delete_relations(relations: list[dict[str, str]]) -> str:
     """Delete specific relations from the graph.
 
     Args:
@@ -133,7 +132,7 @@ async def delete_relations(relations: List[Dict[str, str]]) -> str:
 
 
 @mcp.tool()
-async def read_graph() -> Dict[str, Union[Dict[str, Dict], List[Dict]]]:
+async def read_graph() -> dict[str, dict[str, dict] | list[dict]]:
     """Read the entire knowledge graph.
 
     Returns:
@@ -143,7 +142,7 @@ async def read_graph() -> Dict[str, Union[Dict[str, Dict], List[Dict]]]:
 
 
 @mcp.tool()
-async def search_nodes(query: str) -> Dict[str, Union[Dict[str, Dict], List[Dict]]]:
+async def search_nodes(query: str) -> dict[str, dict[str, dict] | list[dict]]:
     """Search for nodes by name or observation content.
 
     Args:
@@ -156,7 +155,7 @@ async def search_nodes(query: str) -> Dict[str, Union[Dict[str, Dict], List[Dict
 
 
 @mcp.tool()
-async def open_nodes(names: List[str]) -> Dict[str, Union[Dict[str, Dict], List[Dict]]]:
+async def open_nodes(names: list[str]) -> dict[str, dict[str, dict] | list[dict]]:
     """Open specific nodes and their relations.
 
     Args:
