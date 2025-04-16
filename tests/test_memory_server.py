@@ -9,6 +9,7 @@ import pytest
 
 from ontology.knowledge_graph import DEFAULT_MEMORY_FILE_NAME
 from ontology.memory_server import (
+    KnowledgeGraphResource,
     add_observations,
     clear_graph,
     create_entities,
@@ -494,43 +495,48 @@ class TestOpenNodes:
 
 
 @pytest.mark.asyncio
-class TestInitializeGraphFromData:
-    """Test cases for initialize_graph_from_data function."""
+class TestKnowledgeGraphResource:
+    """Test cases for KnowledgeGraphResource."""
 
-    async def test_initialize_empty_content(self, setup_memory: None, temp_dir: str) -> None:
-        """Test initializing graph with empty content."""
-        graph = get_graph()
-        graph.initialize_graph_from_data("")
-        result = await read_graph()
-        assert result == {"entities": {}, "relations": []}
+    async def test_get_entities(self, setup_memory: None, temp_dir: str) -> None:
+        """Test getting entities through the resource."""
+        # Create test data
+        entities = [
+            {
+                "name": "test_project",
+                "entity_type": "project",
+                "observations": ["Test project"],
+            }
+        ]
+        await create_entities(entities)
 
-    async def test_initialize_with_entities(self, setup_memory: None, temp_dir: str) -> None:
-        """Test initializing graph with entities."""
-        content = (
-            '{"name": "test_project", "entity_type": "project", "observations": ["Test project"]}\n'
-            '{"name": "test_component", "entity_type": "component", "observations": ["Test component"]}'
-        )
-        graph = get_graph()
-        graph.initialize_graph_from_data(content)
-        result = await read_graph()
-        assert "test_project" in result["entities"]
-        assert "test_component" in result["entities"]
-        assert result["entities"]["test_project"]["entity_type"] == "project"
-        assert result["entities"]["test_component"]["entity_type"] == "component"
+        # Test resource
+        resource = KnowledgeGraphResource()
+        result = await resource.get_entities()
+        assert "test_project" in result
+        assert result["test_project"]["observations"] == ["Test project"]
 
-    async def test_initialize_with_entities_and_relations(self, setup_memory: None, temp_dir: str) -> None:
-        """Test initializing graph with entities and relations."""
-        content = (
-            '{"name": "test_project", "entity_type": "project", "observations": ["Test project"]}\n'
-            '{"name": "test_component", "entity_type": "component", "observations": ["Test component"]}\n'
-            '{"from_entity": "test_project", "to_entity": "test_component", "relation_type": "has_component"}'
-        )
-        graph = get_graph()
-        graph.initialize_graph_from_data(content)
-        result = await read_graph()
-        assert "test_project" in result["entities"]
-        assert "test_component" in result["entities"]
-        assert len(result["relations"]) == 1
-        assert result["relations"][0]["from_entity"] == "test_project"
-        assert result["relations"][0]["to_entity"] == "test_component"
-        assert result["relations"][0]["relation_type"] == "has_component"
+    async def test_get_relations(self, setup_memory: None, temp_dir: str) -> None:
+        """Test getting relations through the resource."""
+        # Create test data
+        entities = [
+            {"name": "project1", "entity_type": "project", "observations": []},
+            {"name": "component1", "entity_type": "component", "observations": []},
+        ]
+        await create_entities(entities)
+        relations = [
+            {
+                "from_entity": "project1",
+                "to_entity": "component1",
+                "relation_type": "has_component",
+            }
+        ]
+        await create_relations(relations)
+
+        # Test resource
+        resource = KnowledgeGraphResource()
+        result = await resource.get_relations()
+        assert len(result) == 1
+        assert result[0]["from_entity"] == "project1"
+        assert result[0]["to_entity"] == "component1"
+        assert result[0]["relation_type"] == "has_component"

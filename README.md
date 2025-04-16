@@ -65,6 +65,135 @@ ontology/
 - `search_nodes`: Search for nodes by name or observation content
 - `open_nodes`: Open specific nodes and their relations
 
+## Data Structures
+
+### Entity Structure
+Entities are represented as JSON objects with the following structure:
+
+```json
+{
+    "name": "string",         // Unique identifier for the entity
+    "entity_type": "string",  // Type classification of the entity
+    "observations": [         // List of observations/facts about the entity
+        "string1",
+        "string2"
+    ]
+}
+```
+
+Example entity:
+```json
+{
+    "name": "john_doe",
+    "entity_type": "person",
+    "observations": [
+        "Works as a software engineer",
+        "Lives in San Francisco",
+        "Speaks English and Spanish"
+    ]
+}
+```
+
+### Relation Structure
+Relations are represented as JSON objects with the following structure:
+
+```json
+{
+    "from_entity": "string",    // Source entity name
+    "to_entity": "string",      // Target entity name
+    "relation_type": "string"   // Type of relationship
+}
+```
+
+Example relation:
+```json
+{
+    "from_entity": "john_doe",
+    "to_entity": "tech_corp",
+    "relation_type": "works_at"
+}
+```
+
+### API Request Formats
+
+#### Creating Multiple Entities
+```json
+{
+    "entities": [
+        {
+            "name": "john_doe",
+            "entity_type": "person",
+            "observations": ["Works as a software engineer", "Lives in San Francisco"]
+        },
+        {
+            "name": "tech_corp",
+            "entity_type": "company",
+            "observations": ["Founded in 2020", "Based in Silicon Valley"]
+        }
+    ]
+}
+```
+
+#### Creating Multiple Relations
+```json
+{
+    "relations": [
+        {
+            "from_entity": "john_doe",
+            "to_entity": "tech_corp",
+            "relation_type": "works_at"
+        },
+        {
+            "from_entity": "john_doe",
+            "to_entity": "project_alpha",
+            "relation_type": "assigned_to"
+        }
+    ]
+}
+```
+
+#### Adding Observations
+```json
+{
+    "observations": [
+        {
+            "entity_name": "john_doe",
+            "contents": [
+                "Recently completed AWS certification",
+                "Leading the backend team"
+            ]
+        }
+    ]
+}
+```
+
+#### Deleting Observations
+```json
+{
+    "deletions": [
+        {
+            "entity_name": "john_doe",
+            "observation": "Works as a software engineer"
+        }
+    ]
+}
+```
+
+### Storage Format
+The knowledge graph is stored using JSONL (JSON Lines) format, where each entity or relation is stored as a separate line:
+
+```jsonl
+{"name": "john_doe", "entity_type": "person", "observations": ["Works as a software engineer", "Lives in San Francisco"]}
+{"name": "tech_corp", "entity_type": "company", "observations": ["Founded in 2020", "Based in Silicon Valley"]}
+{"from_entity": "john_doe", "to_entity": "tech_corp", "relation_type": "works_at"}
+```
+
+This format provides:
+- Efficient append operations
+- Line-by-line processing capability
+- Data integrity (each line is an independent JSON object)
+- Effective handling of large datasets
+
 ## Development Setup
 
 ### Prerequisites

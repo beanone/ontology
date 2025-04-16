@@ -4,14 +4,32 @@ This module provides a persistent memory implementation using a local knowledge 
 """
 
 import logging
+import threading
+import os
+from typing import Any
 
 from mcp.server.fastmcp import FastMCP
-
-from ontology.knowledge_graph import KnowledgeGraph
+from ontology.knowledge_graph import KnowledgeGraph, MemoryError
 
 # Set up MCP
 mcp = FastMCP("memory")
 logger = logging.getLogger(__name__)
+
+
+@mcp.resource(uri="http://localhost/graph")
+class KnowledgeGraphResource:
+    """MCP Resource for accessing the knowledge graph."""
+
+    def __init__(self):
+        self.graph = get_graph()
+
+    async def get_entities(self) -> dict:
+        """Get all entities in the graph."""
+        return self.graph.read_graph()["entities"]
+
+    async def get_relations(self) -> list:
+        """Get all relations in the graph."""
+        return self.graph.read_graph()["relations"]
 
 
 class GraphManager:
@@ -19,24 +37,38 @@ class GraphManager:
 
     _instance = None
     _graph: KnowledgeGraph | None = None
+    _lock = threading.Lock()
 
     def __new__(cls) -> "GraphManager":
         """Ensure only one instance of GraphManager exists."""
         if cls._instance is None:
-            cls._instance = super().__new__(cls)
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
         return cls._instance
 
     def get_graph(self) -> KnowledgeGraph:
         """Get the graph instance, creating it if it doesn't exist."""
         if self._graph is None:
-            self._graph = KnowledgeGraph()
+            with self._lock:
+                if self._graph is None:
+                    try:
+                        self._graph = KnowledgeGraph()
+                    except MemoryError as e:
+                        logger.error("Failed to initialize knowledge graph: %s", str(e))
+                        raise
         return self._graph
 
     def clear_graph(self) -> None:
         """Clear the graph instance."""
-        if self._graph is not None:
-            self._graph.clear()
-            self._graph = KnowledgeGraph()
+        with self._lock:
+            if self._graph is not None:
+                self._graph.clear()
+                try:
+                    self._graph = KnowledgeGraph()
+                except MemoryError as e:
+                    logger.error("Failed to reinitialize knowledge graph: %s", str(e))
+                    raise
 
 
 # Create the singleton instance
@@ -54,122 +86,61 @@ def clear_graph() -> None:
 
 
 @mcp.tool()
-async def create_entities(entities: list[dict[str, str | list[str]]]) -> str:
-    """Create new entities in the knowledge graph.
-
-    Args:
-        entities: List of entity dictionaries.
-
-    Returns:
-        Success message or error string.
-    """
+async def create_entities(entities: list[dict]) -> str:
+    """Create new entities in the knowledge graph."""
     return get_graph().create_entities(entities)
 
 
 @mcp.tool()
-async def create_relations(relations: list[dict[str, str]]) -> str:
-    """Create new relations between entities.
-
-    Args:
-        relations: List of relation dictionaries.
-
-    Returns:
-        Success message or error string.
-    """
+async def create_relations(relations: list[dict]) -> str:
+    """Create new relations between entities."""
     return get_graph().create_relations(relations)
 
 
 @mcp.tool()
 async def add_observations(observations: list[dict[str, str | list[str]]]) -> str:
-    """Add observations to existing entities.
-
-    Args:
-        observations: List of observation dictionaries.
-
-    Returns:
-        Success message or error string.
-    """
+    """Add observations to existing entities."""
     return get_graph().add_observations(observations)
 
 
 @mcp.tool()
 async def delete_entities(entity_names: list[str]) -> str:
-    """Delete entities and their relations.
-
-    Args:
-        entity_names: List of entity names to delete.
-
-    Returns:
-        Success message or error string.
-    """
+    """Delete entities and their relations."""
     return get_graph().delete_entities(entity_names)
 
 
 @mcp.tool()
 async def delete_observations(deletions: list[dict[str, str]]) -> str:
-    """Delete specific observations from entities.
-
-    Args:
-        deletions: List of deletion dictionaries.
-
-    Returns:
-        Success message or error string.
-    """
+    """Delete specific observations from entities."""
     return get_graph().delete_observations(deletions)
 
 
 @mcp.tool()
 async def delete_relations(relations: list[dict[str, str]]) -> str:
-    """Delete specific relations from the graph.
-
-    Args:
-        relations: List of relation dictionaries.
-
-    Returns:
-        Success message or error string.
-    """
+    """Delete specific relations from the graph."""
     return get_graph().delete_relations(relations)
 
 
 @mcp.tool()
 async def read_graph() -> dict[str, dict[str, dict] | list[dict]]:
-    """Read the entire knowledge graph.
-
-    Returns:
-        Dictionary containing all entities and relations.
-    """
+    """Read the entire knowledge graph."""
     return get_graph().read_graph()
 
 
 @mcp.tool()
 async def search_nodes(query: str) -> dict[str, dict[str, dict] | list[dict]]:
-    """Search for nodes by name or observation content.
-
-    Args:
-        query: Search string.
-
-    Returns:
-        Dictionary containing matching entities and their relations.
-    """
+    """Search for nodes by name or observation content."""
     return get_graph().search_nodes(query)
 
 
 @mcp.tool()
 async def open_nodes(names: list[str]) -> dict[str, dict[str, dict] | list[dict]]:
-    """Open specific nodes and their relations.
-
-    Args:
-        names: List of entity names to open.
-
-    Returns:
-        Dictionary containing specified entities and their relations.
-    """
+    """Open specific nodes and their relations."""
     return get_graph().open_nodes(names)
 
 
 def main() -> None:
-    """Entry point for the memory server."""
-    logger.info("Memory server starting...")
+    """Run the memory server."""
     mcp.run(transport="stdio")
 
 

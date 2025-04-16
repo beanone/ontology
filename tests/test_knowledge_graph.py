@@ -12,7 +12,7 @@ from ontology.knowledge_graph import Entity, KnowledgeGraph, MemoryError, Relati
 @pytest.fixture
 def temp_file(tmp_path: Path) -> Path:
     """Create a temporary file for testing."""
-    test_file = tmp_path / "test_memory.json"
+    test_file = tmp_path / "test_memory.jsonl"
     return test_file
 
 
@@ -286,7 +286,7 @@ def test_graph_with_env_path() -> None:
     with tempfile.TemporaryDirectory() as tmp_dir:
         os.environ["MEMORY_FILE_PATH"] = tmp_dir
         try:
-            os.environ["MEMORY_FILE_NAME"] = "test_env.json"
+            os.environ["MEMORY_FILE_NAME"] = "test_env.jsonl"
             os.environ["LOCAL_STORAGE"] = "false"
             graph = KnowledgeGraph()
             print(f"tmp_dir: {tmp_dir}")
@@ -395,3 +395,30 @@ def test_initialize_graph_from_data_empty_lines(empty_graph: KnowledgeGraph) -> 
     assert len(empty_graph.entities) == 2
     assert "test" in empty_graph.entities
     assert "test2" in empty_graph.entities
+
+
+def test_env_memory_file_name(tmp_path: Path) -> None:
+    """Test that MEMORY_FILE_NAME environment variable is respected."""
+    os.environ["MEMORY_FILE_NAME"] = "test_env.jsonl"
+
+
+def test_create_entities_validation_error(empty_graph: KnowledgeGraph) -> None:
+    """Test entity creation with invalid data."""
+    invalid_entity = {
+        "name": "",  # Empty name should fail validation
+        "entity_type": "project",
+        "observations": []
+    }
+    result = empty_graph.create_entities([invalid_entity])
+    assert result.startswith("Invalid entity data")
+
+
+def test_create_relations_validation_error(empty_graph: KnowledgeGraph) -> None:
+    """Test relation creation with invalid data."""
+    invalid_relation = {
+        "from_entity": "",  # Empty from_entity should fail validation
+        "to_entity": "test_entity2",
+        "relation_type": "has_component"
+    }
+    result = empty_graph.create_relations([invalid_relation])
+    assert result.startswith("Invalid relation data")

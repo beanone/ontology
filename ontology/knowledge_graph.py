@@ -9,12 +9,12 @@ import logging
 import os
 from pathlib import Path
 
-from ontology.models import Entity, Relation
+from ontology.models import Entity, Relation, ValidationError
 
 logger = logging.getLogger(__name__)
 
-# Default settings
-DEFAULT_MEMORY_FILE_NAME = "memory.json"
+# Memory file is always in JSONL format
+DEFAULT_MEMORY_FILE_NAME = "memory.jsonl"
 DEFAULT_LOCAL_STORAGE = False
 DEFAULT_MEMORY_FILE_PATH = "."
 
@@ -169,56 +169,37 @@ class KnowledgeGraph:
             f.flush()
             os.fsync(f.fileno())
 
-    def create_entities(self, entities: list[dict[str, str | list[str]]]) -> str:
-        """Create new entities in the graph.
+    def create_entities(self, entities: list[dict]) -> str:
+        """Create new entities with schema validation."""
+        try:
+            # Validate and create each entity
+            for entity_data in entities:
+                entity = Entity.from_dict(entity_data)
+                if entity.name in self.entities:
+                    return f"Entity already exists: {entity.name}"
+                self.entities[entity.name] = entity
 
-        Args:
-            entities: List of entity dictionaries.
+            self._save_graph()
+            return "Successfully created entities"
 
-        Returns:
-            Success message or error string.
-        """
-        # First check if any entities already exist
-        for entity_data in entities:
-            if entity_data["name"] in self.entities:
-                return f"Entity already exists: {entity_data['name']}"
+        except ValidationError as e:
+            return f"Invalid entity data: {str(e)}"
 
-        # If all entities are new, create them
-        for entity_data in entities:
-            self.entities[entity_data["name"]] = Entity(
-                name=entity_data["name"],
-                entity_type=entity_data["entity_type"],
-                observations=entity_data.get("observations", []),
-            )
+    def create_relations(self, relations: list[dict]) -> str:
+        """Create new relations with schema validation."""
+        try:
+            # Validate and create each relation
+            for relation_data in relations:
+                relation = Relation.from_dict(relation_data)
+                if relation.from_entity not in self.entities or relation.to_entity not in self.entities:
+                    return f"One or both entities not found: {relation.from_entity}, {relation.to_entity}"
+                self.relations.append(relation)
 
-        self._save_graph()
-        return "Successfully created entities"
+            self._save_graph()
+            return "Successfully created relations"
 
-    def create_relations(self, relations: list[dict[str, str]]) -> str:
-        """Create new relations between entities.
-
-        Args:
-            relations: List of relation dictionaries.
-
-        Returns:
-            Success message or error string.
-        """
-        for relation_data in relations:
-            if relation_data["from_entity"] not in self.entities or relation_data["to_entity"] not in self.entities:
-                return f"""One or both entities not found:
-                        {relation_data["from_entity"]},
-                        {relation_data["to_entity"]}"""
-
-            self.relations.append(
-                Relation(
-                    from_entity=relation_data["from_entity"],
-                    to_entity=relation_data["to_entity"],
-                    relation_type=relation_data["relation_type"],
-                )
-            )
-
-        self._save_graph()
-        return "Successfully created relations"
+        except ValidationError as e:
+            return f"Invalid relation data: {str(e)}"
 
     def add_observations(self, observations: list[dict[str, str | list[str]]]) -> str:
         """Add observations to existing entities.
