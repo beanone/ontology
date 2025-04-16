@@ -64,11 +64,20 @@ class GraphManager:
         with self._lock:
             if self._graph is not None:
                 self._graph.clear()
-                try:
-                    self._graph = KnowledgeGraph()
-                except MemoryError as e:
-                    logger.error("Failed to reinitialize knowledge graph: %s", str(e))
-                    raise
+                self._graph = None  # Reset to None so it's recreated on next get_graph()
+
+    def save_graph(self) -> None:
+        """Save the current graph state."""
+        with self._lock:
+            if self._graph is not None:
+                self._graph.save()
+
+    def load_graph(self) -> None:
+        """Load the graph from storage."""
+        with self._lock:
+            if self._graph is None:
+                self._graph = KnowledgeGraph()
+            self._graph.load()
 
 
 # Create the singleton instance

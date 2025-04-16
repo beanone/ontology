@@ -2,6 +2,7 @@
 
 import os
 import tempfile
+import logging
 from collections.abc import Generator
 from pathlib import Path
 
@@ -23,31 +24,43 @@ from ontology.memory_server import (
     search_nodes,
 )
 
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
 
 @pytest.fixture
 def temp_dir() -> Generator[str, None, None]:
     """Create a temporary directory for testing."""
     with tempfile.TemporaryDirectory() as tmp_dir:
+        logger.debug(f"Created temporary directory: {tmp_dir}")
         yield tmp_dir
         # Cleanup is handled by the TemporaryDirectory context manager
+        logger.debug(f"Cleaning up temporary directory: {tmp_dir}")
 
 
 @pytest.fixture
 def setup_memory(temp_dir: str) -> Generator[None, None, None]:
     """Set up a temporary memory file for testing."""
+    memory_path = Path(temp_dir) / DEFAULT_MEMORY_FILE_NAME
+    logger.debug(f"Setting up memory file at: {memory_path}")
+
     # Set up environment variables for testing
     os.environ["MEMORY_FILE_PATH"] = temp_dir
     os.environ["LOCAL_STORAGE"] = "false"
     os.environ["MEMORY_FILE_NAME"] = DEFAULT_MEMORY_FILE_NAME
+    logger.debug("Environment variables set")
 
     # Clear any existing graph state
     clear_graph()
+    logger.debug("Graph state cleared")
 
     # Create an empty memory file
-    memory_path = Path(temp_dir) / DEFAULT_MEMORY_FILE_NAME
     if memory_path.exists():
+        logger.debug(f"Removing existing memory file: {memory_path}")
         memory_path.unlink()
     memory_path.touch()
+    logger.debug(f"Created new memory file: {memory_path}")
 
     yield
 
@@ -58,9 +71,26 @@ def setup_memory(temp_dir: str) -> Generator[None, None, None]:
         del os.environ["LOCAL_STORAGE"]
     if "MEMORY_FILE_NAME" in os.environ:
         del os.environ["MEMORY_FILE_NAME"]
+    logger.debug("Environment variables cleaned up")
 
     # Clear graph state after test
     clear_graph()
+    logger.debug("Graph state cleared")
+
+    # Ensure memory file is deleted
+    if memory_path.exists():
+        logger.debug(f"Removing memory file: {memory_path}")
+        memory_path.unlink()
+        if memory_path.exists():
+            logger.warning(f"Failed to remove memory file: {memory_path}")
+    else:
+        logger.debug(f"Memory file already removed: {memory_path}")
+
+    # Verify cleanup
+    if memory_path.exists():
+        logger.error(f"Memory file still exists after cleanup: {memory_path}")
+        raise RuntimeError(f"Failed to clean up memory file: {memory_path}")
+    logger.debug("Memory file cleanup verified")
 
 
 @pytest.mark.asyncio
